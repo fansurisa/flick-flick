@@ -23,6 +23,16 @@ permissions it uses (Accessibility for pasting snippets, Screen Recording for sc
 
 `SHA256SUMS.txt` in each release lets you check the files weren't changed.
 
+## Updates
+
+Flick Flick updates itself (from version 1.11.0). In **Settings → General → Updates** you choose the channel:
+
+- **Stable** (default): finished releases, checked every few hours.
+- **Dev**: every new build, the pre-releases on this page, within minutes. Newer, sometimes rough.
+
+Downloads are verified against `SHA256SUMS.txt`, and the install waits until you're not using the ring or a window.
+On macOS you may need to allow Accessibility and Screen Recording again after an update.
+
 ## What it does
 
 Rings of apps and actions · type to search (apps, actions, snippets, clipboard history incl. images, a calculator and
