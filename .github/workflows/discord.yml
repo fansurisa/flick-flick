@@ -32,8 +32,8 @@ jobs:
           ROLE_DEV: ${{ vars.DISCORD_ROLE_DEV }}
         run: |
           gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json name,tagName,body,url,isPrerelease,publishedAt > release.json
-          node - <<'EOF'
-          const fs = require('fs');
+          node --input-type=module - <<'EOF'
+          import fs from 'node:fs';
           const r = JSON.parse(fs.readFileSync('release.json', 'utf8'));
           const dev = r.isPrerelease;
           const hook = dev ? process.env.HOOK_DEV : process.env.HOOK_STABLE;
@@ -44,6 +44,11 @@ jobs:
           // The changelog is the release notes, without the file list at the end (the buttons below cover that).
           let notes = (r.body || '').replace(/\r/g, '').split(/\n\*\*Download\*\*|\n- macOS, Apple Silicon:/)[0].trim();
           if (notes.length > 3900) notes = notes.slice(0, 3900).replace(/\n[^\n]*$/, '') + `\n\n…the rest is on [GitHub](${r.url}).`;
+
+          // Stable: link the ux.sur blog post for this version (flickflick-1-15) once it's up; it's often written after.
+          const [, maj, min] = r.tagName.match(/^v?(\d+)\.(\d+)/) || [];
+          const blog = !dev && maj ? `https://uxsur.vercel.app/blog/flickflick-${maj}-${min}` : '';
+          const hasBlog = blog ? await fetch(blog, { method: 'HEAD' }).then((res) => res.ok, () => false) : false;
 
           const payload = {
             username: 'FlickFlick',
@@ -58,15 +63,14 @@ jobs:
               thumbnail: { url: `${site}/favicon.png` },
               fields: dev
                 ? [{ name: 'Get it', value: 'FlickFlick on the Dev channel updates itself (Settings → General → Updates).' }]
-                : [{ name: 'Get it', value: `Already installed? FlickFlick updates itself.\nNew here? [Download for Mac or Windows](${site})` }],
+                : [{ name: 'Get it', value: `Already installed? FlickFlick updates itself.\nNew here? [Download for Mac or Windows](${site})` },
+                   ...(hasBlog ? [{ name: 'Read more', value: `[The blog post, with pictures](${blog})` }] : [])],
               footer: { text: dev ? 'Dev build · may be rough around the edges' : 'Stable' },
               timestamp: r.publishedAt,
             }],
           };
 
-          fetch(hook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(async (res) => {
-              if (!res.ok) { console.error(`Discord said ${res.status}: ${await res.text()}`); process.exit(1); }
-              console.log(`Posted ${r.tagName} to ${dev ? '#dev-builds' : '#announcements'}.`);
-            });
+          const res = await fetch(hook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          if (!res.ok) { console.error(`Discord said ${res.status}: ${await res.text()}`); process.exit(1); }
+          console.log(`Posted ${r.tagName} to ${dev ? '#dev-builds' : '#announcements'}${hasBlog ? ', with the blog post' : ''}.`);
           EOF
