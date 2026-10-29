@@ -1,0 +1,72 @@
+# Posts every published release to the FlickFlick Discord, with its release notes as the changelog:
+# Stable (Latest) to #announcements, Dev (pre-releases) to #dev-builds.
+#
+# Secrets (Settings → Secrets and variables → Actions): DISCORD_WEBHOOK_STABLE, DISCORD_WEBHOOK_DEV, the channels'
+# webhook URLs. Variables (optional): DISCORD_ROLE_STABLE, DISCORD_ROLE_DEV, role IDs to ping (the badges people pick).
+# A missing webhook just skips the post. Run it by hand (Actions → Discord → Run workflow) to post a release again.
+name: Discord
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to post, e.g. v1.15.0
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post the release to Discord
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          HOOK_STABLE: ${{ secrets.DISCORD_WEBHOOK_STABLE }}
+          HOOK_DEV: ${{ secrets.DISCORD_WEBHOOK_DEV }}
+          ROLE_STABLE: ${{ vars.DISCORD_ROLE_STABLE }}
+          ROLE_DEV: ${{ vars.DISCORD_ROLE_DEV }}
+        run: |
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json name,tagName,body,url,isPrerelease,publishedAt > release.json
+          node - <<'EOF'
+          const fs = require('fs');
+          const r = JSON.parse(fs.readFileSync('release.json', 'utf8'));
+          const dev = r.isPrerelease;
+          const hook = dev ? process.env.HOOK_DEV : process.env.HOOK_STABLE;
+          if (!hook) { console.log(`No webhook for ${dev ? 'Dev' : 'Stable'}: skipped.`); process.exit(0); }
+          const role = (dev ? process.env.ROLE_DEV : process.env.ROLE_STABLE) || '';
+          const site = 'https://flickflick.vercel.app';
+
+          // The changelog is the release notes, without the file list at the end (the buttons below cover that).
+          let notes = (r.body || '').replace(/\r/g, '').split(/\n\*\*Download\*\*|\n- macOS, Apple Silicon:/)[0].trim();
+          if (notes.length > 3900) notes = notes.slice(0, 3900).replace(/\n[^\n]*$/, '') + `\n\n…the rest is on [GitHub](${r.url}).`;
+
+          const payload = {
+            username: 'FlickFlick',
+            avatar_url: `${site}/favicon.png`,
+            content: `${role ? `<@&${role}> ` : ''}${dev ? '🧪 A new Dev build is out' : '🎉 FlickFlick has a new version'}: **${r.name}**`,
+            allowed_mentions: { roles: role ? [role] : [] },
+            embeds: [{
+              title: r.name,
+              url: r.url,
+              description: notes,
+              color: dev ? 0x8a8a90 : 0xa9d027,
+              thumbnail: { url: `${site}/favicon.png` },
+              fields: dev
+                ? [{ name: 'Get it', value: 'FlickFlick on the Dev channel updates itself (Settings → General → Updates).' }]
+                : [{ name: 'Get it', value: `Already installed? FlickFlick updates itself.\nNew here? [Download for Mac or Windows](${site})` }],
+              footer: { text: dev ? 'Dev build · may be rough around the edges' : 'Stable' },
+              timestamp: r.publishedAt,
+            }],
+          };
+
+          fetch(hook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(async (res) => {
+              if (!res.ok) { console.error(`Discord said ${res.status}: ${await res.text()}`); process.exit(1); }
+              console.log(`Posted ${r.tagName} to ${dev ? '#dev-builds' : '#announcements'}.`);
+            });
+          EOF
