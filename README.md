@@ -1,20 +1,22 @@
-# Flick Flick
+# FlickFlick
 
 A radial action menu for macOS and Windows: press a shortcut and a ring of your apps and actions opens right under
 your cursor. Flick toward one and it's done. Free, forever.
 
+> This repository only hosts the downloads and release notes. FlickFlick's source code is closed and isn't published here.
+
 **Download:** [uxsur.vercel.app/shop/flick-flick](https://uxsur.vercel.app/shop/flick-flick) or the
-[latest release](https://github.com/fansurisa/flick-flick/releases/latest).
+[latest release](https://github.com/fansurisa/flickflick/releases/latest).
 
 | | |
 |---|---|
-| macOS, Apple Silicon (M1–M4) | `Flick-Flick-mac-apple-silicon.dmg` |
-| macOS, Intel | `Flick-Flick-mac-intel.dmg` |
-| Windows 10 / 11 | `Flick-Flick-Setup-windows.exe` |
+| macOS, Apple Silicon (M1–M4) | `FlickFlick-mac-apple-silicon.dmg` |
+| macOS, Intel | `FlickFlick-mac-intel.dmg` |
+| Windows 10 / 11 | `FlickFlick-Setup-windows.exe` |
 
 ## Installing
 
-**macOS:** open the DMG and drag Flick Flick into Applications. The app isn't notarized by Apple yet, so the first time
+**macOS:** open the DMG and drag FlickFlick into Applications. The app isn't notarized by Apple yet, so the first time
 macOS says it can't check it: open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**
 (on older macOS: right-click the app → Open). The welcome window then walks you through the shortcut and the two
 permissions it uses (Accessibility for pasting snippets, Screen Recording for screenshots).
@@ -25,7 +27,7 @@ permissions it uses (Accessibility for pasting snippets, Screen Recording for sc
 
 ## Updates
 
-Flick Flick updates itself (from version 1.11.0). In **Settings → General → Updates** you choose the channel:
+FlickFlick updates itself (from version 1.11.0). In **Settings → General → Updates** you choose the channel:
 
 - **Stable** (default): finished releases, checked every few hours.
 - **Dev**: every new build, the pre-releases on this page, within minutes. Newer, sometimes rough.
